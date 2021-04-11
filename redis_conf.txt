@@ -1,5 +1,7 @@
 module load /data/module_alpine.so
 redis-cli config set notify-keyspace-events KEA
+redis-cli config set maxmemory 256mb
+
 
 
 payload = "{\"body\": \"W1siL1ZvbHVtZXMvZGFuaTIvUHJvamVjdHMvZmxhc2tfY2VsZXJ5L2FwcC9mbGFza19jZWxlcnlfaG93dG8udHh0IiwgIml0LXdvcmtzISJdLCB7fSwgeyJjYWxsYmFja3MiOiBudWxsLCAiZXJyYmFja3MiOiBudWxsLCAiY2hhaW4iOiBudWxsLCAiY2hvcmQiOiBudWxsfV0=\", \"content-encoding\": \"utf-8\", \"content-type\": \"application/json\", \"headers\": {\"lang\": \"py\", \"task\": \"app.tasks.make_file\", \"id\": \"a36d1e40-ac0a-4c2c-b8a6-e3b2dc15ac60\", \"shadow\": null, \"eta\": null, \"expires\": null, \"group\": null, \"retries\": 0, \"timelimit\": [null, null], \"root_id\": \"a36d1e40-ac0a-4c2c-b8a6-e3b2dc15ac60\", \"parent_id\": null, \"argsrepr\": \"('/Volumes/dani2/Projects/flask_celery/app/flask_celery_howto.txt', 'it-works!')\", \"kwargsrepr\": \"{}\", \"origin\": \"gen58681@Dandis-MacBook-Pro.local\"}, \"properties\": {\"correlation_id\": \"a36d1e40-ac0a-4c2c-b8a6-e3b2dc15ac60\", \"reply_to\": \"d855e240-7fec-3085-9765-0f259cc1db69\", \"delivery_mode\": 2, \"delivery_info\": {\"exchange\": \"\", \"routing_key\": \"celery\"}, \"priority\": 0, \"body_encoding\": \"base64\", \"delivery_tag\": \"56223a87-9930-4234-98f7-948ebe782791\"}}"
