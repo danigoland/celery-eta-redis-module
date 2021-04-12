@@ -3,7 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
-	"github.com/go-redis/redis"
+	"github.com/go-redis/redis/v8"
 	"github.com/sirupsen/logrus"
 	"os"
 	"strings"
@@ -33,6 +33,12 @@ func init() {
 	options.PoolTimeout = 30 * time.Second
 
 	rdb = redis.NewClient(options)
+	pong, err := rdb.Ping(ctx).Result()
+	if err != nil {
+		log.WithFields(logrus.Fields{"error": err, "redis_uri": redisURI}).Error("Error while executing ping command")
+		panic(err)
+	}
+	log.WithField("redis_uri", redisURI).Info("Ping response: ", pong)
 }
 
 func performETA(keyName string){
