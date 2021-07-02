@@ -28,10 +28,8 @@ class CustomCelery(Celery):
                                          root_id=root_id, parent_id=parent_id, route_name=route_name,
                                          shadow=shadow, chain=chain, task_type=task_type, **options)
 
-        parent = have_parent = None
         amqp = self.amqp
         task_id = task_id or uuid()
-        producer = producer or publisher  # XXX compat
         router = router or amqp.router
         conf = self.conf
         if conf.task_always_eager:  # pragma: no cover
@@ -39,7 +37,6 @@ class CustomCelery(Celery):
                 'task_always_eager has no effect on send_task',
             ), stacklevel=2)
 
-        ignored_result = options.pop('ignore_result', False)
         options = router.route(
             options, route_name or name, args, kwargs, task_type)
 
@@ -64,7 +61,7 @@ class CustomCelery(Celery):
             root_id, parent_id, shadow, chain,
             argsrepr=options.get('argsrepr'),
             kwargsrepr=options.get('kwargsrepr'),
-            )
+        )
 
         queue = options['queue'].routing_key
 
@@ -75,10 +72,9 @@ class CustomCelery(Celery):
         message.properties['delivery_info'] = {'exchange': '',
                                                'routing_key': queue}
 
-
         payload = json.dumps({
-            'body':base64.b64encode(json.dumps(message.body).encode()).decode(),
-            'headers':message.headers,
+            'body': base64.b64encode(json.dumps(message.body).encode()).decode(),
+            'headers': message.headers,
             'properties': message.properties,
             'content-type': 'application/json',
             'content-encoding': 'utf-8',
@@ -87,4 +83,3 @@ class CustomCelery(Celery):
         client = self.pool.connection.manager.channel.client
         client.hset(f"data:{queue}", task_id, payload)
         client.set(f"{queue}:{task_id}", "", ex=countdown)
-

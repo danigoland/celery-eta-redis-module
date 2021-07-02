@@ -76,7 +76,7 @@ func main() {
 
 	defer pubsub.Close()
 
-	// Wait for confirmation that subscription is created
+	// Wait until subscription is confirmed
 	_, err := pubsub.Receive(ctx)
 	if err != nil {
 		log.WithField("error", err).Error("Error receiving subscription confirmation")

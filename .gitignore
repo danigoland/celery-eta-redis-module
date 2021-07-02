@@ -1,10 +1,13 @@
 *.o
+*.so
 *.a
 *.db
-rmutil/test_vector
+listeners/c/rmutil/test_vector
 
 
 # Project exclude paths
-/cmake-build-debug/
+cmake-build-debug
 
 .idea
+bin
+venv
