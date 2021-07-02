@@ -19,14 +19,19 @@ class CustomCelery(Celery):
                   shadow=None, chain=None, task_type=None, **options):
         if not countdown:
             return super(self).send_task(name, args=args, kwargs=kwargs, countdown=countdown,
-                                         eta=eta, task_id=task_id, producer=producer, connection=connection,
+                                         eta=eta, task_id=task_id, producer=producer,
+                                         connection=connection,
                                          router=router, result_cls=result_cls, expires=expires,
                                          publisher=publisher, link=link, link_error=link_error,
-                                         add_to_parent=add_to_parent, group_id=group_id, group_index=group_index,
+                                         add_to_parent=add_to_parent, group_id=group_id,
+                                         group_index=group_index,
                                          retries=retries, chord=chord,
-                                         reply_to=reply_to, time_limit=time_limit, soft_time_limit=soft_time_limit,
-                                         root_id=root_id, parent_id=parent_id, route_name=route_name,
-                                         shadow=shadow, chain=chain, task_type=task_type, **options)
+                                         reply_to=reply_to, time_limit=time_limit,
+                                         soft_time_limit=soft_time_limit,
+                                         root_id=root_id, parent_id=parent_id,
+                                         route_name=route_name,
+                                         shadow=shadow, chain=chain, task_type=task_type,
+                                         **options)
 
         amqp = self.amqp
         task_id = task_id or uuid()
@@ -61,7 +66,7 @@ class CustomCelery(Celery):
             root_id, parent_id, shadow, chain,
             argsrepr=options.get('argsrepr'),
             kwargsrepr=options.get('kwargsrepr'),
-        )
+            )
 
         queue = options['queue'].routing_key
 
@@ -80,6 +85,9 @@ class CustomCelery(Celery):
             'content-encoding': 'utf-8',
         })
 
+        deduplication_id = options.pop('deduplication_id', None)
+        task_key = deduplication_id or task_id
+
         client = self.pool.connection.manager.channel.client
-        client.hset(f"data:{queue}", task_id, payload)
-        client.set(f"{queue}:{task_id}", "", ex=countdown)
+        client.hsetnx(f"data:{queue}", task_key, payload)
+        client.set(f"eta:{queue}:{task_key}", nx=True, ex=countdown)

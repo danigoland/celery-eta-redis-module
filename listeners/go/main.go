@@ -13,6 +13,7 @@ import (
 var log = logrus.New()
 var rdb *redis.Client
 var ctx = context.Background()
+var etaPrefix = "eta:"
 
 func init() {
 	redisURI := os.Getenv("REDIS_URI")
@@ -42,7 +43,7 @@ func init() {
 }
 
 func performETA(keyName string){
-	parts := strings.Split(keyName, ":")
+	parts := strings.Split(strings.TrimPrefix(keyName, etaPrefix), ":")
 	queue := parts[0]
 	taskId := parts[1]
 	taskLogger := log.WithFields(logrus.Fields{"queue": queue, "task_id": taskId})
@@ -76,7 +77,7 @@ func main() {
 
 	defer pubsub.Close()
 
-	// Wait until subscription is confirmed
+	// Wait for confirmation that subscription is created
 	_, err := pubsub.Receive(ctx)
 	if err != nil {
 		log.WithField("error", err).Error("Error receiving subscription confirmation")
@@ -86,7 +87,7 @@ func main() {
 	ch := pubsub.Channel()
 
 	for msg := range ch {
-		if strings.Contains(msg.Payload, ":") {
+		if strings.Contains(msg.Payload, etaPrefix) {
 			go performETA(msg.Payload)
 		}
 
