@@ -25,6 +25,7 @@ var lockExtenderChannel chan struct{}
 var ctx = context.Background()
 var pubSub *redis.PubSub
 var wg sync.WaitGroup
+var lockAcquired bool
 
 const (
 	pubSubChannelSize = 1000
@@ -33,6 +34,7 @@ const (
 )
 
 func init() {
+	lockAcquired = false
 	redisURI := os.Getenv("REDIS_URI")
 	if redisURI == "" {
 		redisURI = "redis://localhost:6379/0"
@@ -122,8 +124,8 @@ func cleanup(ch <-chan *redis.Message) {
 	}
 	if status {
 		log.Info("Redis Lock Released")
+		lockAcquired = false
 	}
-
 	listen(ch)
 	wg.Wait()
 	os.Exit(0)
@@ -140,7 +142,6 @@ func main() {
 
 	// Even if another instance has a lock, we still collect the most recent 1000 messages to use if a fail-over occurs
 	pubSub = rdb.Subscribe(ctx, "__keyevent@0__:expired")
-
 	// Wait for confirmation that subscription is created
 	_, err := pubSub.Receive(ctx)
 	if err != nil {
@@ -160,6 +161,8 @@ func main() {
 		cleanup(ch)
 	}()
 
+	go serveHealthCheck()
+
 	defer cleanup(ch)
 
 	for {
@@ -171,11 +174,13 @@ func main() {
 						<-ch
 					}
 				}
+				lockAcquired = false
 				continue
 			}
 			panic(err)
 		}
 		log.Info("Obtained a lock!")
+		lockAcquired = true
 		ticker := time.NewTicker(4 * time.Second)
 		lockExtenderChannel = make(chan struct{})
 		go func() {
@@ -185,13 +190,17 @@ func main() {
 					extended, err := redisMutex.ExtendContext(ctx)
 					if err != nil {
 						close(lockExtenderChannel)
+						lockAcquired = false
 					}
 					if !extended {
 						close(lockExtenderChannel)
+						lockAcquired = false
 					}
+					lockAcquired = true
 				case <-lockExtenderChannel:
 					// This will currently cause the program to die and relies on an orchestrator to restart it
 					// Implement a retry loop
+					lockAcquired = false
 					ticker.Stop()
 					cleanup(ch)
 					return
