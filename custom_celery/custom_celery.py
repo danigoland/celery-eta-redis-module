@@ -90,4 +90,4 @@ class CustomCelery(Celery):
 
         client = self.pool.connection.manager.channel.client
         client.hsetnx(f"data:{queue}", task_key, payload)
-        client.set(f"eta:{queue}:{task_key}", nx=True, ex=countdown)
+        client.set(f"eta:{queue}:{task_key}", value="", nx=True, ex=countdown)
