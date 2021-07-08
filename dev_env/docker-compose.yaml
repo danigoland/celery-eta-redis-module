@@ -33,10 +33,12 @@ services:
     - 5050:5555
     environment:
       BROKER_URL: "redis://redis:6379/0"
-#  eta-scheduler:
-#    image: redis-eta-listener
-#    environment:
-#      REDIS_URI: "redis://redis:6379/0"
+  eta-scheduler:
+    image: eta-scheduler
+    environment:
+      REDIS_URI: "redis://redis:6379/0"
+    ports:
+      - 5000:5000
 #  cadvisor:
 #    image: gcr.io/cadvisor/cadvisor:latest
 #    container_name: cadvisor

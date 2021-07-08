@@ -180,7 +180,7 @@ func main() {
 	rdb.ConfigSet(ctx, "notify-keyspace-events", "KEA")
 
 	// Even if another instance has a lock, we still collect the most recent 1000 messages to use if a fail-over occurs
-	pubSub = rdb.Subscribe(ctx, "__keyevent@0__:expired")
+	pubSub = rdb.Subscribe(ctx, fmt.Sprintf("__keyevent@%d__:expired", rdb.Options().DB))
 	// Wait for confirmation that subscription is created
 	_, err := pubSub.Receive(ctx)
 	if err != nil {
