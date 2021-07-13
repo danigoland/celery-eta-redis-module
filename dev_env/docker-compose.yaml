@@ -10,6 +10,8 @@ services:
   grafana:
     image: grafana/grafana
     restart: always
+    logging:
+      driver: "none"
     ports:
       - 3000:3000
     depends_on:
@@ -34,9 +36,10 @@ services:
     environment:
       BROKER_URL: "redis://redis:6379/0"
   eta-scheduler:
-    image: eta-scheduler
+    image: eta-scheduler:v1.1
     environment:
       REDIS_URI: "redis://redis:6379/0"
+      DEBUG_MODE: "True"
     ports:
       - 5000:5000
 #  cadvisor:

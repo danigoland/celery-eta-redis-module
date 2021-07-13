@@ -10,6 +10,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"os"
 	"os/signal"
+	"strconv"
 	"strings"
 	"sync"
 	"syscall"
@@ -27,6 +28,7 @@ var ctx = context.Background()
 var pubSub *redis.PubSub
 var wg sync.WaitGroup
 var lockAcquired bool
+var debugMode bool
 
 const (
 	pubSubChannelSize = 1000
@@ -44,6 +46,9 @@ func SafeClose(ch chan struct{}) {
 }
 
 func init() {
+
+	log.SetFormatter(&logrus.JSONFormatter{})
+
 	lockAcquired = false
 	redisURI := os.Getenv("REDIS_URI")
 	if redisURI == "" {
@@ -119,6 +124,12 @@ func listen(ch <-chan *redis.Message) {
 		if strings.Contains(msg.Payload, etaPrefix) {
 			wg.Add(1)
 			tasksReceived.Inc()
+			if debugMode {
+				parts := strings.Split(strings.TrimPrefix(msg.Payload, etaPrefix), ":")
+				queue := parts[0]
+				taskId := parts[1]
+				log.WithFields(logrus.Fields{"queue": queue, "task_id": taskId}).Debug("Received ETA Task")
+			}
 			go performETA(msg.Payload)
 		}
 
@@ -160,26 +171,36 @@ func cleanup(ch <-chan *redis.Message) {
 
 func main() {
 
-	var debug bool
+	var debugFlag bool
 
-	flag.BoolVar(&debug, "debug", false, "Debug logging mode. Default is false")
+	flag.BoolVar(&debugFlag, "debug", false, "Debug logging mode. Default is false")
 
 	flag.Parse()
 
-	if debug {
+	debugEnvVarStr := os.Getenv("DEBUG_MODE")
+	debugEnvVar, err := strconv.ParseBool(debugEnvVarStr)
+
+	if err != nil {
+		log.WithField("error", err).Error("Error parsing DEBUG_MODE Environmental Variable")
+		panic(err)
+	}
+
+	debugMode = debugFlag || debugEnvVar
+
+	if debugMode {
 		log.SetLevel(logrus.DebugLevel)
+		log.Debug("Log Level is set to DEBUG")
 	} else {
 		log.SetLevel(logrus.InfoLevel)
 	}
 
-	log.SetFormatter(&logrus.JSONFormatter{})
 	// TODO: Only set config if doesn't exist
 	rdb.ConfigSet(ctx, "notify-keyspace-events", "KEA")
 
 	// Even if another instance has a lock, we still collect the most recent 1000 messages to use if a fail-over occurs
 	pubSub = rdb.Subscribe(ctx, fmt.Sprintf("__keyevent@%d__:expired", rdb.Options().DB))
 	// Wait for confirmation that subscription is created
-	_, err := pubSub.Receive(ctx)
+	_, err = pubSub.Receive(ctx)
 	if err != nil {
 		log.WithField("error", err).Error("Error receiving subscription confirmation")
 		panic(err)
