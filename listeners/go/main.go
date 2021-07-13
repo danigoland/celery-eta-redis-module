@@ -172,10 +172,7 @@ func main() {
 		log.SetLevel(logrus.InfoLevel)
 	}
 
-	log.SetFormatter(&logrus.TextFormatter{
-		FullTimestamp:   true,
-		TimestampFormat: time.RFC3339Nano,
-	})
+	log.SetFormatter(&logrus.JSONFormatter{})
 	// TODO: Only set config if doesn't exist
 	rdb.ConfigSet(ctx, "notify-keyspace-events", "KEA")
 

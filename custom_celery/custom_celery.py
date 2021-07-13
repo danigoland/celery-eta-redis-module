@@ -33,6 +33,7 @@ class CustomCelery(Celery):
                                          shadow=shadow, chain=chain, task_type=task_type,
                                          **options)
 
+        countdown = int(countdown)
         amqp = self.amqp
         task_id = task_id or uuid()
         router = router or amqp.router
